@@ -1,16 +1,14 @@
 #!/usr/bin/env ruby
 
-x = {Fizz: 3, Buzz: 5, FizzBuzz: 3*5}
+x = { Fizz: 3, Buzz: 5, FizzBuzz: 3 * 5 }
 (1..20).each do |n|
-  case
-  when n % x[:FizzBuzz] == 0
+  if (n % x[:FizzBuzz]).zero?
     puts :FizzBuzz.to_s
-  when n % x[:Fizz] == 0
+  elsif n % x[:Fizz].zero?
     puts :Fizz.to_s
-  when n % x[:Buzz] == 0
+  elsif n % x[:Buzz].zero?
     puts :Buzz.to_s
   else
     puts n
   end
 end
-
