@@ -49,28 +49,19 @@ module LS
     private
 
     def extras
-      # lsコマンド同様にファイルを、存在しないもの < ファイル（拡張子） < ファイル（ファイル名） < ディレクトリの順に並べる
+      # ファイルを、存在しないもの < ファイル < ディレクトリの順に並べる
       not_exist = ARGV.reject { |v| File.exist?(v) }
       files = ARGV.select { |v| File.file?(v) }
       dirs = ARGV.select { |v| File.directory?(v) }
 
       not_exist.sort!
-      files = sort_files(files)
+      files.sort! do |a, b|
+        @options[R] ? b <=> a : a <=> b
+      end
       @options[R] ? dirs.reverse! : dirs.sort!
 
       # ファイル指定されたものかどうか後続処理で区別するため、配列のまま返す
       [*not_exist, files, *dirs]
-    end
-
-    def sort_files(files)
-      files.sort! do |a, b|
-        comparison = if !File.extname(a).empty? && !File.extname(b).empty?
-                       @options[R] ? File.extname(b) <=> File.extname(a) : File.extname(a) <=> File.extname(b)
-                     end
-        next comparison if !comparison.nil? && !comparison.zero?
-
-        @options[R] ? b <=> a : a <=> b
-      end
     end
   end
 
