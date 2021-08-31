@@ -41,29 +41,23 @@ class BowlingScore
   end
 
   def calculate_score
-    @score.each.with_index.inject(0) do |result, (val, index)|
+    @score.each.with_index.sum do |val, i|
       # 最終フレーム以外のストライク、スペアは次フレームの投球スコアを加算する
-      if (0...9).cover?(index)
-        if val[0] == MAX_PINS
-          # ストライクの場合、2投
-          result += get_additional_score(index, 2)
-        elsif val.sum == MAX_PINS
-          # スペアの場合、1投
-          result += get_additional_score(index, 1)
-        end
-      end
-      result + val.sum
+      next val.sum unless (0...9).cover?(i)
+      next val.sum + get_additional_score(i, 2) if val[0] == MAX_PINS
+      next val.sum + get_additional_score(i, 1) if val.sum == MAX_PINS
+
+      val.sum
     end
   end
 
   private
 
-  def get_additional_score(current_frame, throw_count)
+  def get_additional_score(current_frame_index, throw_count)
     # 加算対象の投球がフレームをまたぐ場合、次のフレームを参照する
-    (0...throw_count).inject(0) do |result, i|
-      result + (@score[current_frame + 1][i] || @score[current_frame + throw_count][0])
+    (0...throw_count).sum do |i|
+      (@score[current_frame_index + 1][i] || @score[current_frame_index + throw_count][0])
     end
   end
 end
-
 puts BowlingScore.new(ARGV[0]).calculate_score if __FILE__ == $PROGRAM_NAME
