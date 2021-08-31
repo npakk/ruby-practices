@@ -38,7 +38,7 @@ class BowlingScore
     end
   end
 
-  def calculate_score
+  def calculate
     @frames.each.with_index.sum do |val, i|
       # 最終フレーム以外のストライク、スペアは次フレームの投球スコアを加算する
       next val.sum unless (0...9).cover?(i)
@@ -58,4 +58,4 @@ class BowlingScore
     end
   end
 end
-puts BowlingScore.new(ARGV[0]).calculate_score if __FILE__ == $PROGRAM_NAME
+puts BowlingScore.new(ARGV[0]).calculate if __FILE__ == $PROGRAM_NAME
