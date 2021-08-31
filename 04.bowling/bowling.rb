@@ -18,22 +18,20 @@ class BowlingScore
   STRIKE = 'X'
   MAX_PINS = 10
 
-  attr_accessor :score
-
   def initialize(game_score)
-    @score = []
+    @frames = []
     throw_per_frame = 0
     score = game_score.split(',')
     score.each_with_index do |s, index|
       # 10フレーム目のスコアはまとめて挿入する
-      return @score << score[index...score.size].to_i if @score.size == 9
+      return @frames << score[index...score.size].to_i if @frames.size == 9
 
       if s == STRIKE
         throw_per_frame = 0
-        @score << [MAX_PINS]
+        @frames << [MAX_PINS]
       elsif throw_per_frame.odd?
         throw_per_frame = 0
-        @score << [score[index - 1].to_i, s.to_i]
+        @frames << [score[index - 1].to_i, s.to_i]
       else
         throw_per_frame = 1
       end
@@ -41,7 +39,7 @@ class BowlingScore
   end
 
   def calculate_score
-    @score.each.with_index.sum do |val, i|
+    @frames.each.with_index.sum do |val, i|
       # 最終フレーム以外のストライク、スペアは次フレームの投球スコアを加算する
       next val.sum unless (0...9).cover?(i)
       next val.sum + get_additional_score(i, 2) if val[0] == MAX_PINS
@@ -56,7 +54,7 @@ class BowlingScore
   def get_additional_score(current_frame_index, throw_count)
     # 加算対象の投球がフレームをまたぐ場合、次のフレームを参照する
     (0...throw_count).sum do |i|
-      (@score[current_frame_index + 1][i] || @score[current_frame_index + throw_count][0])
+      (@frames[current_frame_index + 1][i] || @frames[current_frame_index + throw_count][0])
     end
   end
 end
