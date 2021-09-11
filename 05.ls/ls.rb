@@ -69,6 +69,33 @@ module LS
   class FileStatus
     require 'etc'
 
+    FTYPES = {
+      '01' => 'p',
+      '02' => 'c',
+      '04' => 'd',
+      '06' => 'b',
+      '10' => '-',
+      '12' => 'l',
+      '14' => 's'
+    }.freeze
+
+    PERMISSIONS = {
+      '7' => 'rwx',
+      '6' => 'rw-',
+      '5' => 'r-x',
+      '4' => 'r--',
+      '3' => '-wx',
+      '2' => '-w-',
+      '1' => '--x'
+    }.freeze
+
+    S_PERMISSIONS = {
+      '0' => '',
+      '1' => 't',
+      '2' => 's',
+      '4' => 's'
+    }.freeze
+
     def initialize(file)
       @file = file
       @file_stat = File.lstat(file)
@@ -90,18 +117,15 @@ module LS
       group = mode[4]
       other = mode[5]
 
-      ftypes = { '01' => 'p', '02' => 'c', '04' => 'd', '06' => 'b', '10' => '-', '12' => 'l', '14' => 's' }
-      ftype = ftypes[ftype]
+      ftype = FTYPES[ftype]
 
-      permissions = { '7' => 'rwx', '6' => 'rw-', '5' => 'r-x', '4' => 'r--', '3' => '-wx', '2' => '-w-', '1' => '--x' }
-      owner = permissions[owner]
-      group = permissions[group]
-      other = permissions[other]
+      owner = PERMISSIONS[owner]
+      group = PERMISSIONS[group]
+      other = PERMISSIONS[other]
 
-      s_permissions = { '0' => '', '1' => 't', '2' => 's', '4' => 's' }
-      other = s_permission != '1' ? other : format_special_permission(other, s_permissions[s_permission])
-      owner = s_permission != '2' ? owner : format_special_permission(owner, s_permissions[s_permission])
-      group = s_permission != '4' ? group : format_special_permission(group, s_permissions[s_permission])
+      other = s_permission != '1' ? other : format_special_permission(other, S_PERMISSIONS[s_permission])
+      owner = s_permission != '2' ? owner : format_special_permission(owner, S_PERMISSIONS[s_permission])
+      group = s_permission != '4' ? group : format_special_permission(group, S_PERMISSIONS[s_permission])
 
       ftype + owner + group + other
     end
