@@ -5,9 +5,9 @@ module LS
   class Options
     require 'optparse'
 
-    A = :a
-    L = :l
-    R = :r
+    ALL = :all
+    LONG = :long
+    REVERSE = :reverse
     EXTRAS = :extras
 
     def initialize
@@ -16,15 +16,15 @@ module LS
         opt.on(
           '-a',
           'Include directory entries whose names begin with a dot (.).'
-        ) { |v| @options[A] = v }
+        ) { |v| @options[ALL] = v }
         opt.on(
           '-l',
           "(The lowercase letter ``ell''.)  List in long format.  (See below.)  A total sum for all the file sizes is output on a line before the long listing."
-        ) { |v| @options[L] = v }
+        ) { |v| @options[LONG] = v }
         opt.on(
           '-r',
           'Reverse the order of the sort to get reverse lexicographical order or the oldest entries first (or largest files last, if combined with sort by size'
-        ) { |v| @options[R] = v }
+        ) { |v| @options[REVERSE] = v }
 
         opt.parse!(ARGV)
 
@@ -43,7 +43,7 @@ module LS
     end
 
     def file_match
-      @options[A] ? File::FNM_DOTMATCH : 0
+      @options[ALL] ? File::FNM_DOTMATCH : 0
     end
 
     private
@@ -56,9 +56,9 @@ module LS
 
       not_exist.sort!
       files.sort! do |a, b|
-        @options[R] ? b <=> a : a <=> b
+        @options[REVERSE] ? b <=> a : a <=> b
       end
-      @options[R] ? dirs.reverse! : dirs.sort!
+      @options[REVERSE] ? dirs.reverse! : dirs.sort!
 
       # ファイル指定されたものかどうか後続処理で区別するため、配列のまま返す
       [*not_exist, files, *dirs]
@@ -153,10 +153,10 @@ module LS
                     # ディレクトリを明示されないかぎり、ディレクトリ名を出力しない
                     puts "\n#{extra}:" unless options.get(Options::EXTRAS).nil?
                     glob = Dir.glob('*', options.file_match, base: extra)
-                    options.get(Options::R) ? glob.reverse : glob
+                    options.get(Options::REVERSE) ? glob.reverse : glob
                   end
 
-          options.has?(Options::L) ? vertical_formatter(files, extra) : horizontal_formatter(files)
+          options.has?(Options::LONG) ? vertical_formatter(files, extra) : horizontal_formatter(files)
         end
       end
 
