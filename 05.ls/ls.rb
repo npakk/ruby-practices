@@ -8,7 +8,8 @@ module LS
     ALL = :all
     LONG = :long
     REVERSE = :reverse
-    EXTRAS = :extras
+
+    attr_reader :files
 
     def initialize
       @options = {}
@@ -30,7 +31,7 @@ module LS
 
         break if ARGV.empty?
 
-        @options[EXTRAS] = extras
+        @files = specified_files
       end
     end
 
@@ -48,7 +49,7 @@ module LS
 
     private
 
-    def extras
+    def specified_files
       # ファイルを、存在しないもの < ファイル < ディレクトリの順に並べる
       not_exist = ARGV.reject { |v| File.exist?(v) }
       files = ARGV.select { |v| File.file?(v) }
@@ -144,26 +145,26 @@ module LS
 
       def run
         options = Options.new
-        extras = options.get(Options::EXTRAS).nil? ? ['./'] : delete_no_such_file(options.get(Options::EXTRAS))
+        files = options.files.nil? ? ['./'] : delete_no_such_file(options.files)
 
-        extras.each do |extra|
-          files = if extra.instance_of?(Array)
-                    extra
+        files.each do |file|
+          files = if file.instance_of?(Array)
+                    file
                   else
                     # ディレクトリを明示されないかぎり、ディレクトリ名を出力しない
-                    puts "\n#{extra}:" unless options.get(Options::EXTRAS).nil?
-                    glob = Dir.glob('*', options.file_match, base: extra)
+                    puts "\n#{file}:" unless options.files.nil?
+                    glob = Dir.glob('*', options.file_match, base: file)
                     options.get(Options::REVERSE) ? glob.reverse : glob
                   end
 
-          options.has?(Options::LONG) ? vertical_formatter(files, extra) : horizontal_formatter(files)
+          options.has?(Options::LONG) ? vertical_formatter(files, file) : horizontal_formatter(files)
         end
       end
 
-      def vertical_formatter(files, extra)
+      def vertical_formatter(files, file)
         file_stat = { mode: [], nlink: [], user: [], group: [], size: [], time: [], name: [], blocks: [] }
         files.each do |v|
-          s = LS::FileStatus.new("#{extra.instance_of?(Array) ? './' : extra}#{v}")
+          s = LS::FileStatus.new("#{file.instance_of?(Array) ? './' : file}#{v}")
           file_stat[:mode] << s.mode
           file_stat[:nlink] << s.nlink
           file_stat[:user] << s.user
@@ -175,7 +176,7 @@ module LS
         end
 
         # ファイル指定されたものは、ブロックサイズを表示しない
-        puts "total #{file_stat[:blocks].sum}" unless extra.instance_of?(Array)
+        puts "total #{file_stat[:blocks].sum}" unless file.instance_of?(Array)
 
         w_nlink, w_user, w_group, w_size = *get_max_length_file_stat(file_stat)
 
