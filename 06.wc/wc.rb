@@ -75,7 +75,7 @@ module WC
           output(OutputData.new(file, max_length, line_count, word_count, file_size), options)
         end
 
-        output(OutputData.new('total', max_length, line_counts.sum, word_counts.sum, file_sizes.sum), options) unless options.files.nil?
+        output(OutputData.new('total', max_length, line_counts.sum, word_counts.sum, file_sizes.sum), options) if options.files.size > 1
       end
 
       private
