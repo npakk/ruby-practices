@@ -2,114 +2,129 @@
 # frozen_string_literal: true
 
 module WC
-  class Options
+  class Option
     require 'optparse'
 
-    LINES = :lines
-
-    attr_reader :files
-
     def initialize
-      @options = {}
+      @option = {}
       OptionParser.new do |opt|
         opt.on(
           '-l',
           'The number of lines in each input file is written to the standard output.'
-        ) { |v| @options[LINES] = v }
+        ) { |v| @option[:lines] = v }
 
         opt.parse!(ARGV)
-
-        break if ARGV.empty?
-
-        @files = ARGV
       end
     end
 
-    def has?(name)
-      @options.include?(name)
-    end
-
-    def get(name)
-      @options[name]
+    def get(opt_name)
+      @option[opt_name]
     end
   end
 
-  class FileStatus
-    def initialize(file)
-      @file = file
+  class StringStatus
+    attr_reader :filename
+
+    def initialize(text)
+      @text = if FileTest.file?(text)
+                @filename = text
+                File.read(text)
+              elsif ARGV.empty? && !$stdin.tty?
+                text
+              else
+                ''
+              end
     end
 
-    def line_count
-      File.read(@file).lines.count
+    def linecount
+      @text.lines.count
     end
 
-    def word_count
-      File.read(@file).split(/\s+/).size
+    def wordcount
+      @text.split(/\s+/).size
     end
 
-    def file_size
-      File.size(@file)
+    def bytesize
+      @text.bytesize
     end
   end
-
-  OutputData = Struct.new(:file, :max_length, :line_count, :word_count, :file_size)
 
   class Command
     class << self
       def run
-        options = Options.new
+        @option = Option.new
+        @args = ARGV
 
-        if options.files.nil?
-          stdin = $stdin.readlines.join
-          return output(OutputData.new(nil, 7, stdin.lines.count, stdin.split(/\s+/).size, stdin.size), options)
+        if @args.empty?
+          stdin_status = WC::StringStatus.new($stdin.readlines.join)
+          max_length = get_max_length(stdin_status)
+          output(stdin_status, max_length)
+        else
+          file_status_list = get_file_status_list
+          max_length = get_max_length(file_status_list)
+
+          @args.each do |arg|
+            next puts "wc: #{arg}: open: No such file or directory" unless File.exist?(arg)
+            next puts "wc: #{arg}: read: Is a directory" if File.directory?(arg)
+
+            file_status = file_status_list.find { |status| status.filename == arg }
+            output(file_status, max_length, filename: file_status.filename)
+          end
+
+          # total
+          output(file_status_list, max_length, filename: 'total') if output_total?
         end
-
-        line_counts, word_counts, file_sizes = get_file_status(options)
-        max_length = get_max_length([*line_counts, *word_counts, *file_sizes])
-
-        options.files.zip(line_counts, word_counts, file_sizes).each do |v|
-          file, line_count, word_count, file_size = v
-          next puts "wc: #{file}: open: No such file or directory" unless File.exist?(file)
-          next puts "wc: #{file}: read: Is a directory" if File.directory?(file)
-
-          output(OutputData.new(file, max_length, line_count, word_count, file_size), options)
-        end
-
-        output(OutputData.new('total', max_length, line_counts.sum, word_counts.sum, file_sizes.sum), options) if options.files.size > 1
       end
 
       private
 
-      def get_file_status(options)
-        line_counts = []
-        word_counts = []
-        file_sizes = []
-        options.files.each do |file|
-          s = WC::FileStatus.new(file) if File.exist?(file) && !File.directory?(file)
-          line_counts << (s&.line_count || 0)
-          word_counts << (s&.word_count || 0)
-          file_sizes << (s&.file_size || 0)
+      def get_file_status_list
+        @args.map do |arg|
+          WC::StringStatus.new(arg)
         end
-        [line_counts, word_counts, file_sizes]
       end
 
-      def output(data, options = nil)
-        return puts " #{rjust_formatter(data.max_length, data.line_count)} #{data.file}" if options&.get(Options::LINES)
+      def output(status_list, length, filename: '')
+        line, word, size = get_total_status(status_list, sum: true)
 
-        str = " #{rjust_formatter(data.max_length, data.line_count)}"\
-              " #{rjust_formatter(data.max_length, data.word_count)}"\
-              " #{rjust_formatter(data.max_length, data.file_size)}"\
-              " #{data.file}"
-        puts str
+        text = format_value(line, length)
+        text += format_value(word, length) + format_value(size, length) unless @option.get(:lines)
+        text += "\s#{filename}" unless filename.empty?
+        puts text
       end
 
-      def rjust_formatter(max_length, value)
+      def format_value(value, max_length)
         value.to_s.rjust(max_length)
       end
 
-      def get_max_length(value)
-        # 本家wcコマンド同様に3文字分の余白を設ける
-        value.max.to_s.length + 3
+      def get_max_length(status_list)
+        valiables = get_total_status(status_list, sum: false)
+
+        # 本家wcコマンド同様に4文字分の余白を設ける
+        valiables.max.to_s.length + 4
+      end
+
+      def get_total_status(status_list, sum:)
+        unless status_list.instance_of?(Array)
+          return [status_list.linecount,
+                  status_list.wordcount,
+                  status_list.bytesize]
+        end
+
+        if sum
+          [status_list.sum(&:linecount),
+           status_list.sum(&:wordcount),
+           status_list.sum(&:bytesize)]
+        else
+          # linecount,wordcount,bytesizeそれぞれのmaxを取得してから、全体でみたときのmaxを取得する
+          [status_list.max_by(&:linecount).linecount,
+           status_list.max_by(&:wordcount).wordcount,
+           status_list.max_by(&:bytesize).bytesize]
+        end
+      end
+
+      def output_total?
+        @args.find { |arg| FileTest.file?(arg) }
       end
     end
   end
