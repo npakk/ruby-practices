@@ -70,9 +70,12 @@ module WC
           output(output_data, max_length, option)
         end
 
+        # コマンド引数が2つ以上だった場合、totalを出力する
+        return unless output_total?(text_status_list)
+
         line_count, word_count, bytesize = get_status_sum(text_status_list)
         output_data = OutputData.new(line_count, word_count, bytesize, 'total')
-        output(output_data, max_length, option) if output_total?(text_status_list)
+        output(output_data, max_length, option)
       end
 
       def parse_option_and_arguments
@@ -129,7 +132,7 @@ module WC
       end
 
       def output_total?(text_status_list)
-        text_status_list.count(&:file?) > 1
+        text_status_list.count > 1
       end
     end
   end
