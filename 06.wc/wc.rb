@@ -112,17 +112,17 @@ module WC
         value.to_s.rjust(max_length)
       end
 
-      def get_max_length(max_status_list)
+      def get_max_length(status_value_list)
         # 本家wcコマンド同様に4文字分の余白を設け、最低8文字の長さにする
-        [max_status_list.max.to_s.length + 4, 8].max
+        [status_value_list.max.to_s.length + 4, 8].max
       end
 
       def get_max_length_for_list(status_list)
-        max_status_list = [status_list.max_by(&:line_count).line_count,
-                           status_list.max_by(&:word_count).word_count,
-                           status_list.max_by(&:bytesize).bytesize]
+        status_value_list = [status_list.max_by(&:line_count).line_count,
+                             status_list.max_by(&:word_count).word_count,
+                             status_list.max_by(&:bytesize).bytesize]
 
-        get_max_length(max_status_list)
+        get_max_length(status_value_list)
       end
 
       def get_status_sum(status_list)
