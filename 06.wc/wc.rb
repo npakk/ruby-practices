@@ -70,7 +70,6 @@ module WC
           output(output_data, max_length, option)
         end
 
-        # コマンド引数が2つ以上だった場合、totalを出力する
         return unless output_total?(text_status_list)
 
         line_count, word_count, bytesize = get_status_sum(text_status_list)
@@ -103,7 +102,6 @@ module WC
       end
 
       def output(output_data, length, option)
-        # Rubocopにより引数の個数5以下を求められたため、Structを採用
         text = format_value(output_data.line_count, length)
         text += format_value(output_data.word_count, length) + format_value(output_data.bytesize, length) unless option[:lines]
         text += "\s#{output_data.name}" unless output_data.name.nil?
